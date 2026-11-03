@@ -15,12 +15,12 @@ for col in ["fuel", "seller_type", "transmission", "owner"]:
 
 # 2. name -> marque + modele  (exemple complet)
 mots = df["name"].str.split()
+# 3. Garder seulement les nombres
 df["marque"] = mots.str[0]
 df["modele"] = mots.str[1]
 df = df.drop(columns=["name"])
 
 
-# 3. Garder seulement les nombres
 # TODO : pour "mileage", "engine", "max_power"
 # Nettoyage des colonnes "nombre + unité" (ex. "23.4 kmpl", "1248 CC", "74 bhp")
 # .str.split() coupe chaque valeur aux espaces, .str[0] garde le 1er morceau (le nombre)
@@ -36,6 +36,8 @@ df = df.drop(columns=["torque"]) # je drop cette info car elle est coreller a ma
 # 4. Texte -> nombres
 
 # TODO : owner avec .map({...})  (Test Drive Car=0, First Owner=1, ...)
+correspodance = {"Test Drive Car": 0, "First Owner":1,"Second Owner":2, "Third Owner":3, "Fourth & Above Owner": 4 }
+df["owner"] = df["owner"].map(correspodance)
 # TODO : transmission avec .map({"Manual": 0, "Automatic": 1})
 # TODO : fuel et seller_type avec pd.get_dummies(df, columns=[...])
 # TODO : marque et modele
