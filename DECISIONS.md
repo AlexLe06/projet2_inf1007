@@ -2,8 +2,22 @@
 
 | Choix | Options envisagées | Choix retenu et justification | Validé par l'auxiliaire (date) |
 |---|---|---|---|
-| Domaine | | | |
-| Jeu de données | | | |
-| Cible et métrique | | | |
-| Modèle | | | |
-| Technologie d'interface | | | |
+| Domaine | Finance (stratégie momentum sur des actions), marché automobile | Prix des voitures d'occasion : lié à notre intérêt pour la finance (estimer une valeur de marché), avec des données tabulaires plus simples à modéliser qu'une série boursière | |
+| Jeu de données | Données boursières (momentum), CarDekho « Car details v3 » (Kaggle) | CarDekho v3 : 8128 voitures, 13 colonnes (année, km, carburant, transmission, propriétaires, moteur, puissance…). Assez de lignes pour entraîner un modèle et des colonnes faciles à interpréter | |
+| Cible et métrique | Cible : `selling_price`. Métriques : MAE, RMSE, R² | Cible `selling_price` (régression). MAE pour l'erreur moyenne en roupies, facile à expliquer ; R² pour la part de variation du prix expliquée. Comparaison avec une référence qui prédit toujours le prix moyen | |
+| Modèle | Régression linéaire, arbre de décision, forêt aléatoire | Forêt aléatoire (`RandomForestRegressor`) : gère les relations non linéaires (ex. dépréciation selon l'année), peu sensible aux échelles des colonnes, et donne l'importance de chaque variable. La régression linéaire servira de comparaison | |
+| Technologie d'interface | Tkinter, Streamlit, PyQt | _à décider_ | |
+| Colonne `name` | Garder le nom complet ; marque + reste du nom ; marque + modèle + version ; marque + modèle (2 mots) | Marque (1er mot) + modèle (2e mot), le reste du nom (version) est retiré : la marque et le modèle de base expliquent l'essentiel du prix, et on garde environ 200 modèles au lieu de plus de 2000 noms différents | |
+| Colonnes avec unités (`mileage`, `engine`, `max_power`) | Garder le texte ; extraire le nombre | Extraction du nombre avec `.str.split().str[0]` et `pd.to_numeric(errors="coerce")` : les valeurs sans nombre (ex. `" bhp"`) deviennent des valeurs manquantes au lieu de faire planter le programme | |
+| Unités de `mileage` | Convertir les km/kg en kmpl ; garder tel quel | Gardé tel quel : 88 voitures (CNG et LPG) sont en km/kg et les autres en kmpl, mais les colonnes `fuel_CNG` et `fuel_LPG` permettent au modèle de faire la différence | |
+| Colonne `torque` | Extraire le nombre et convertir les kgm en Nm (×9,8) ; supprimer la colonne | Supprimée : format incohérent (Nm, kgm, plages de rpm) et information déjà couverte par `engine` et `max_power` | |
+| Colonne `owner` | `.map()` vers des nombres ; one-hot (`get_dummies`) | `.map()` : Test Drive Car = 0, First Owner = 1, …, Fourth & Above Owner = 4, car les catégories ont un ordre naturel | |
+| Colonne `transmission` | `.map()` ; one-hot | `.map()` : Manual = 0, Automatic = 1 (seulement deux valeurs) | |
+| Colonnes `fuel` et `seller_type` | `.map()` vers des nombres ; one-hot (`get_dummies`) | One-hot : ces catégories n'ont pas d'ordre ; un `.map()` ferait croire au modèle que Petrol (2) est « plus grand » que Diesel (1) | |
+| Colonnes `marque` et `modele` | One-hot ; code numérique (`cat.codes`) | Code numérique : 32 marques et 207 modèles, trop de colonnes en one-hot. La correspondance nom → code est sauvegardée dans `codes_categories.json` pour que l'interface retrouve le même code | |
+| Doublons | Garder ; supprimer | Supprimés (`drop_duplicates`) : 1221 lignes identiques en tout point (environ 15 % du fichier), qui fausseraient l'entraînement et l'évaluation | |
+| Valeurs manquantes | Supprimer les lignes ; remplacer par la médiane | Lignes supprimées (`dropna`) : 209 lignes, environ 3 % des données, presque toujours les mêmes lignes vides dans plusieurs colonnes. Jeu final : 6698 voitures, 18 colonnes numériques | |
+| Séparation entraînement / test | 70 / 30, 80 / 20 | 80 % entraînement, 20 % test (`train_test_split`, `random_state=42`) : assez de données pour apprendre, et une coupe identique à chaque exécution pour comparer les modèles équitablement | |
+| Modèle de référence | Prix moyen ; prix médian | `DummyRegressor(strategy="mean")` : prédit toujours le prix moyen. Résultat sur le test : MAE = 286 660 roupies, R² = 0,00 | |
+| Régression linéaire (version de base) | — | `LinearRegression` sur toutes les colonnes : MAE = 175 576 roupies, R² = 0,60. Bien meilleure que la référence, mais elle prédit des prix négatifs pour certaines voitures | |
+| Améliorations prévues de la régression | Log du prix ; marque en one-hot ; aucune | Prévu : entraîner sur le log du prix (évite les prix négatifs, gère les voitures de luxe) et encoder la marque en one-hot (les codes numériques n'ont pas de sens pour une droite) | |
